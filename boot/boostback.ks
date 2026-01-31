@@ -24,18 +24,20 @@ Print "Radar offset: " + round(radarOffset,2) + "m".
 Set engineTag to core:part:tag + "engine".
 Set boosterEngine to ship:partstagged(engineTag)[0].
 Print "Waiting to stage...".
+Wait until status = "FLYING".
 
 // ====================
 // 2. STAGING & SEPARATION
 // ====================
 
-Wait until boosterEngine:flameout.
+//Wait until boosterEngine:flameout. //old version, doesn't preserve ignitions
+Wait until stage:deltav:duration < 2. //arbitrary
 Print "Staging.".
 Stage.
+Lock throttle to 0.01. //was 0; preserves ignitions
 Wait 0.1.
 SAS off.
 Set reserveTanks to ship:partstagged("reservefuel").
-Lock throttle to 0.
 Print "Enabling reserve propellants.".
 For eachTank in reserveTanks {
   For eachResource in eachTank:resources {
@@ -65,10 +67,10 @@ If separatorCount > 0 {
   Print "Waiting for separation.".
   Wait 4.
 }.
-Lock throttle to 0.01. //or else thrust will read 0 due to prior flameout
+//Lock throttle to 0.01. //or else thrust will read 0 due to prior flameout //no longer needed
 Wait 0.1.
 Set landingIsp to averageIspAt(availableEngines(),1).
-Lock throttle to 0.
+//Lock throttle to 0.01. //was 0; preserves ignitions //no longer needed
 Set sepDV to landingDV(landingIsp).
 
 // ====================
@@ -87,7 +89,7 @@ RCS on.
 set steeringStartTime to time:seconds.
 Lock steering to boostbackHeadingNoRoll.
 Print "Waiting for steering...".
-Lock throttle to max(0.333 - (differenceFromBBH/90),0). //experimental; leverage gimbal without messing up trajectory
+Lock throttle to max(0.333 - (differenceFromBBH/90),0.01). //experimental; leverage gimbal without messing up trajectory //was as little as zero before; preserves ignitions
 Until differenceFromBBH < 5 {
   Print "   Difference from heading: " + round(differenceFromBBH,2).
   Wait 1.
@@ -110,7 +112,7 @@ Set fineTuneDistance to 35.
 When landingDV(landingIsp) < abortThresholdDV or cancelAbort then {
   If boostingBack {
     Print "Aborting site selection: landing capacity < " + abortThresholdDV + " dv".
-    Lock throttle to 0.
+    Lock throttle to 0.01. //was 0; preserves ignitions
     Set boostingBack to false.
     Set emergencyAbort to true.
   }
@@ -128,7 +130,7 @@ Until not boostingBack {
   }.
   If (currentImpactDistance - targetDistance) < 0 {
     Print "Landing target reached.".
-    Lock throttle to 0.
+    Lock throttle to 0.01. //was 0; preserves ignitions
     Set boostingBack to false.
   }.
   Wait 0.2.
@@ -136,7 +138,7 @@ Until not boostingBack {
 Set cancelAbort to true.
 Print "Boostback time was " + round(time:seconds - boostbackStartTime,2) + "s".
 Set boostedDV to landingDV(landingIsp).
-Lock throttle to 0.
+Lock throttle to 0.001. //was 0; preserves ignitions
 RCS off.
 Lock steering to R(srfretrograde:pitch,srfretrograde:yaw,facing:roll).
 
